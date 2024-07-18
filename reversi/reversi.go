@@ -1,46 +1,34 @@
 package reversi
 
 import (
-	"strconv"
-	"strings"
-)
-
-type Stone int
-
-const (
-	None Stone = iota
-	Black
-	White
+	b "github.com/YO-RO/reversi-go/reversi/board"
 )
 
 type Reversi struct {
-	CurrStone     Stone
+	CurrStone     b.Stone
 	Skipped       bool
 	skippedInARow bool
 	end           bool
-	result        Stone // Noneは引き分け
-	Board         [8][8]Stone
-	builder       strings.Builder
+	board         b.Board
 }
 
 func NewReversi() Reversi {
+	board := b.Board{}
+	board.PutByLoc("4d", b.White)
+	board.PutByLoc("4e", b.Black)
+	board.PutByLoc("5d", b.Black)
+	board.PutByLoc("5e", b.White)
 	return Reversi{
-		CurrStone: Black,
-		Board: [8][8]Stone{
-			3: {3: White, 4: Black},
-			4: {3: Black, 4: White},
-		},
+		CurrStone: b.Black,
+		board:     board,
 	}
 }
 
-func (r *Reversi) testPut(row, col int, stopStone Stone) [][2]int {
-	if row < 0 || row > 7 || col < 0 || col > 7 {
+func (r *Reversi) testPut(row, col int, stopStone b.Stone) [][2]int {
+	if s, ok := r.board.Get(row, col); !ok || s != b.None {
 		return [][2]int{}
 	}
-	if r.Board[row][col] != None {
-		return [][2]int{}
-	}
-	if stopStone != r.CurrStone && stopStone != None {
+	if stopStone != r.CurrStone && stopStone != b.None {
 		return [][2]int{}
 	}
 
@@ -55,21 +43,19 @@ func (r *Reversi) testPut(row, col int, stopStone Stone) [][2]int {
 		{1, -1},
 	}
 	found := make([][2]int, 0)
-	candedates := make([][2]int, 0)
 	for _, dir := range dirs {
-		candedates = candedates[:0]
-		rr, cc := row, col
-		for {
-			rr, cc = rr+dir[0], cc+dir[1]
-			if rr < 0 || rr > 7 || cc < 0 || cc > 7 {
-				break
-			}
-			if r.Board[rr][cc] == r.otherStone() {
+		candedates := make([][2]int, 0)
+
+		origin := [2]int{row, col}
+		// originのマスは除外するため[1:]
+		checkingMasses := r.board.LinearExtract(origin, dir)[1:]
+		for _, m := range checkingMasses {
+			if m.Stone == r.CurrStone.Reversed() {
 				candedates = append(
 					candedates,
-					[2]int{rr, cc},
+					[2]int{m.Row, m.Col},
 				)
-			} else if r.Board[rr][cc] == stopStone {
+			} else if m.Stone == stopStone {
 				found = append(found, candedates...)
 				break
 			} else {
@@ -81,17 +67,16 @@ func (r *Reversi) testPut(row, col int, stopStone Stone) [][2]int {
 }
 
 func (r *Reversi) currentMustSkip() bool {
-	for row, line := range r.Board {
-		for col, stone := range line {
-			if stone != None {
-				continue
-			}
-			reverseStonesPos := r.testPut(row, col, None)
-			if reverseStonesPos == nil || len(reverseStonesPos) == 0 {
-				continue
-			}
-			return false
+	for _, mass := range r.board.GetAll() {
+		row, col := mass.Row, mass.Col
+		if mass.Stone != b.None {
+			continue
 		}
+		reverseStones := r.testPut(row, col, b.None)
+		if reverseStones == nil || len(reverseStones) == 0 {
+			continue
+		}
+		return false
 	}
 	return true
 }
@@ -99,21 +84,22 @@ func (r *Reversi) currentMustSkip() bool {
 func (r *Reversi) Put(row, col int) bool {
 	r.Skipped = false
 
-	reverseStonesPos := r.testPut(row, col, r.CurrStone)
-	if reverseStonesPos == nil ||
-		len(reverseStonesPos) == 0 {
+	reverseStonesIdx := r.testPut(row, col, r.CurrStone)
+	if reverseStonesIdx == nil ||
+		len(reverseStonesIdx) == 0 {
 		return false
 	}
 
-	r.Board[row][col] = r.CurrStone
-	for _, pos := range reverseStonesPos {
-		r.Board[pos[0]][pos[1]] = r.CurrStone
+	r.board.Put(row, col, r.CurrStone)
+	for _, i := range reverseStonesIdx {
+		r.board.Put(i[0], i[1], r.CurrStone)
 	}
-	r.CurrStone = r.otherStone()
+
+	r.CurrStone = r.CurrStone.Reversed()
 
 	if r.currentMustSkip() {
 		r.Skipped = true
-		r.CurrStone = r.otherStone()
+		r.CurrStone = r.CurrStone.Reversed()
 		if r.currentMustSkip() {
 			r.skippedInARow = true
 		}
@@ -122,73 +108,29 @@ func (r *Reversi) Put(row, col int) bool {
 	return true
 }
 
-func (r *Reversi) otherStone() Stone {
-	switch r.CurrStone {
-	case Black:
-		return White
-	case White:
-		return Black
-	default:
-		return None
-	}
-}
-
 func (r *Reversi) Skip() {
-	r.CurrStone = r.otherStone()
+	r.CurrStone = r.CurrStone.Reversed()
 }
 
-func (r *Reversi) Result() (bool, Stone) {
-	if r.end {
-		return true, r.result
+func (r *Reversi) Result() (b.Stone, bool) {
+	noneCnt, blackCnt, whiteCnt := r.board.CountStone()
+	if noneCnt > 0 && !r.skippedInARow {
+		return b.None, false
 	}
-
-	zeroMass := true
-	blackCnt, whiteCnt := 0, 0
-	for _, line := range r.Board {
-		for _, mass := range line {
-			switch mass {
-			case None:
-				zeroMass = false
-			case Black:
-				blackCnt++
-			case White:
-				whiteCnt++
-			}
-		}
-	}
-
-	if !zeroMass && !r.skippedInARow {
-		return false, None
-	}
-
+	var result b.Stone
 	r.end = true
 	switch {
 	case blackCnt > whiteCnt:
-		r.result = Black
+		result = b.Black
 	case blackCnt < whiteCnt:
-		r.result = White
+		result = b.White
 	default:
-		r.result = None
+		result = b.None
 	}
-	return r.end, r.result
+	return result, r.end
 }
 
 func (r *Reversi) String() string {
-	r.builder.Reset()
-	r.builder.WriteString("\n  a b c d e f g h\n")
-	for i, line := range r.Board {
-		r.builder.WriteString(strconv.Itoa(i + 1))
-		for _, stone := range line {
-			switch stone {
-			case None:
-				r.builder.WriteString(" ◌")
-			case Black:
-				r.builder.WriteString(" ●")
-			case White:
-				r.builder.WriteString(" ○")
-			}
-		}
-		r.builder.WriteString("\n")
-	}
-	return r.builder.String()
+	board := r.board.String()
+	return board
 }
