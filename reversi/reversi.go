@@ -64,29 +64,36 @@ func (r *Reversi) testPut(row, col int, stone b.Stone) [][2]int {
 }
 
 func (r *Reversi) skipCount(stone b.Stone) int {
-	needToSkip := func(stone b.Stone) bool {
-		for _, square := range r.board.GetAll() {
-			row, col := square.Row, square.Col
-			if square.Stone != b.None {
-				continue
-			}
-			locToBeAbleToReverse := r.testPut(row, col, stone)
-			if locToBeAbleToReverse == nil || len(locToBeAbleToReverse) == 0 {
-				continue
-			}
-			return false
-		}
-		return true
+	requireSkip := func(stone b.Stone) bool {
+		return len(r.putCandidates(stone)) == 0
 	}
 
 	switch {
-	case needToSkip(stone) && needToSkip(stone.Reversed()):
+	case requireSkip(stone) && requireSkip(stone.Reversed()):
 		return 2
-	case needToSkip(stone):
+	case requireSkip(stone):
 		return 1
 	default:
 		return 0
 	}
+}
+
+func (r *Reversi) PutCandidates() [][2]int {
+	return r.putCandidates(r.CurrStone)
+}
+
+func (r *Reversi) putCandidates(stone b.Stone) [][2]int {
+	candidates := [][2]int{}
+	for _, square := range r.board.GetAll() {
+		if square.Stone != b.None {
+			continue
+		}
+		stonesToReverse := r.testPut(square.Row, square.Col, stone)
+		if stonesToReverse != nil && len(stonesToReverse) > 0 {
+			candidates = append(candidates, [2]int{square.Row, square.Col})
+		}
+	}
+	return candidates
 }
 
 func (r *Reversi) Put(row, col int) bool {
