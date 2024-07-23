@@ -52,7 +52,8 @@ func SignToIndex(sign string) (int, int, bool) {
 	return row, col, true
 }
 
-type Mass struct {
+// マスのこと
+type Square struct {
 	Row, Col int
 	Stone    Stone
 }
@@ -73,12 +74,12 @@ func (b *Board) Get(row, col int) (Stone, bool) {
 	return b.grid[row][col], true
 }
 
-func (b *Board) GetAll() [64]Mass {
-	var res [64]Mass
+func (b *Board) GetAll() [64]Square {
+	var res [64]Square
 	for row, line := range b.grid {
 		for col, stone := range line {
 			i := 8*row + col
-			res[i] = Mass{
+			res[i] = Square{
 				Row:   row,
 				Col:   col,
 				Stone: stone,
@@ -88,11 +89,11 @@ func (b *Board) GetAll() [64]Mass {
 	return res
 }
 
-func (b *Board) LinearExtract(origin, dir [2]int) []Mass {
-	res := []Mass{}
+func (b *Board) LinearExtract(origin, dir [2]int) []Square {
+	res := []Square{}
 	for i := origin; validIndex(i[0], i[1]); i[0], i[1] = i[0]+dir[0], i[1]+dir[1] {
 		stone, _ := b.Get(i[0], i[1])
-		res = append(res, Mass{
+		res = append(res, Square{
 			Row:   i[0],
 			Col:   i[1],
 			Stone: stone,
@@ -125,8 +126,8 @@ func (b *Board) PutByLoc(sign string, stone Stone) bool {
 }
 
 func (b *Board) CountStone() (none, black, white int) {
-	for _, mass := range b.GetAll() {
-		switch mass.Stone {
+	for _, square := range b.GetAll() {
+		switch square.Stone {
 		case None:
 			none++
 		case Black:

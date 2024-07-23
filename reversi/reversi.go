@@ -6,7 +6,7 @@ import (
 
 type Reversi struct {
 	CurrStone     b.Stone
-	Skipped       bool
+	AutoSkipped   bool
 	skippedInARow bool
 	end           bool
 	board         b.Board
@@ -66,9 +66,9 @@ func (r *Reversi) testPut(row, col int, stone b.Stone) [][2]int {
 
 func (r *Reversi) mustSkipCount(stone b.Stone) int {
 	mustSkip := func(stone b.Stone) bool {
-		for _, mass := range r.board.GetAll() {
-			row, col := mass.Row, mass.Col
-			if mass.Stone != b.None {
+		for _, square := range r.board.GetAll() {
+			row, col := square.Row, square.Col
+			if square.Stone != b.None {
 				continue
 			}
 			locToBeAbleToReverse := r.testPut(row, col, stone)
@@ -91,7 +91,7 @@ func (r *Reversi) mustSkipCount(stone b.Stone) int {
 }
 
 func (r *Reversi) Put(row, col int) bool {
-	r.Skipped = false
+	r.AutoSkipped = false
 
 	willReverseLocs := r.testPut(row, col, r.CurrStone)
 	if willReverseLocs == nil || len(willReverseLocs) == 0 {
@@ -107,9 +107,9 @@ func (r *Reversi) Put(row, col int) bool {
 	case 0:
 		r.CurrStone = r.CurrStone.Reversed()
 	case 1:
-		r.Skipped = true
+		r.AutoSkipped = true
 	case 2:
-		r.Skipped = true
+		r.AutoSkipped = true
 		r.skippedInARow = true
 	}
 	return true
