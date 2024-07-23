@@ -5,11 +5,10 @@ import (
 )
 
 type Reversi struct {
-	CurrStone     b.Stone
-	AutoSkipped   bool
-	skippedInARow bool
-	end           bool
-	board         b.Board
+	CurrStone   b.Stone
+	AutoSkipped bool
+	end         bool
+	board       b.Board
 }
 
 func NewReversi() Reversi {
@@ -109,8 +108,7 @@ func (r *Reversi) Put(row, col int) bool {
 	case 1:
 		r.AutoSkipped = true
 	case 2:
-		r.AutoSkipped = true
-		r.skippedInARow = true
+		r.end = true
 	}
 	return true
 }
@@ -120,21 +118,21 @@ func (r *Reversi) Skip() {
 }
 
 func (r *Reversi) Result() (b.Stone, bool) {
-	noneCnt, blackCnt, whiteCnt := r.board.CountStone()
-	if noneCnt > 0 && !r.skippedInARow {
+	if !r.end {
 		return b.None, false
 	}
-	var result b.Stone
-	r.end = true
+
+	var winner b.Stone
+	_, blackCnt, whiteCnt := r.board.CountStone()
 	switch {
 	case blackCnt > whiteCnt:
-		result = b.Black
+		winner = b.Black
 	case blackCnt < whiteCnt:
-		result = b.White
+		winner = b.White
 	default:
-		result = b.None
+		winner = b.None
 	}
-	return result, r.end
+	return winner, r.end
 }
 
 func (r *Reversi) String() string {
