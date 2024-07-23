@@ -92,7 +92,7 @@ func (r *Reversi) Put(row, col int) bool {
 
 	r.board.Put(row, col, r.CurrStone)
 	for _, i := range reverseStonesIdx {
-		r.board.Put(i[0], i[1], r.CurrStone)
+		r.board.Reverse(i[0], i[1])
 	}
 
 	r.CurrStone = r.CurrStone.Reversed()

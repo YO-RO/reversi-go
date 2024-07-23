@@ -101,8 +101,16 @@ func (b *Board) LinearExtract(origin, dir [2]int) []Mass {
 	return res
 }
 
+func (b *Board) Reverse(row, col int) bool {
+	if !validIndex(row, col) || b.surface[row][col] == None {
+		return false
+	}
+	b.surface[row][col] = b.surface[row][col].Reversed()
+	return true
+}
+
 func (b *Board) Put(row, col int, stone Stone) bool {
-	if !validIndex(row, col) {
+	if !validIndex(row, col) || b.surface[row][col] != None {
 		return false
 	}
 	b.surface[row][col] = stone
@@ -110,12 +118,10 @@ func (b *Board) Put(row, col int, stone Stone) bool {
 }
 
 func (b *Board) PutByLoc(sign string, stone Stone) bool {
-	row, col, ok := SignToIndex(sign)
-	if !ok {
-		return false
+	if row, col, ok := SignToIndex(sign); ok {
+		return b.Put(row, col, stone)
 	}
-	b.surface[row][col] = stone
-	return true
+	return false
 }
 
 func (b *Board) CountStone() (none, black, white int) {
