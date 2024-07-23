@@ -136,11 +136,11 @@ func (b *Board) String() string {
 		for _, stone := range line {
 			switch stone {
 			case None:
-				b.builder.WriteString(" ◌")
+				b.builder.WriteString(" _")
 			case Black:
-				b.builder.WriteString(" ●")
+				b.builder.WriteString(" b")
 			case White:
-				b.builder.WriteString(" ○")
+				b.builder.WriteString(" w")
 			}
 		}
 		b.builder.WriteString("\n")
