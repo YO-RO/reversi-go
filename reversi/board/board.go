@@ -14,19 +14,6 @@ const (
 	White
 )
 
-func (s Stone) Name() string {
-	switch s {
-	case None:
-		return "空"
-	case Black:
-		return "黒"
-	case White:
-		return "白"
-	default:
-		return ""
-	}
-}
-
 func (s Stone) Reversed() Stone {
 	switch s {
 	case Black:
