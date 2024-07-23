@@ -24,11 +24,8 @@ func NewReversi() Reversi {
 	}
 }
 
-func (r *Reversi) testPut(row, col int, stopStone b.Stone) [][2]int {
+func (r *Reversi) testPut(row, col int, stone b.Stone) [][2]int {
 	if s, ok := r.board.Get(row, col); !ok || s != b.None {
-		return [][2]int{}
-	}
-	if stopStone != r.CurrStone && stopStone != b.None {
 		return [][2]int{}
 	}
 
@@ -42,68 +39,78 @@ func (r *Reversi) testPut(row, col int, stopStone b.Stone) [][2]int {
 		{0, -1},
 		{1, -1},
 	}
-	found := make([][2]int, 0)
+	// slice of [2]int{row, col}
+	willReverseLocs := make([][2]int, 0)
 	for _, dir := range dirs {
-		candedates := make([][2]int, 0)
-
+		candedates := make([][2]int, 0, 6)
 		origin := [2]int{row, col}
+	CHECK_REVERSE:
 		// originのマスは除外するため[1:]
-		checkingMasses := r.board.LinearExtract(origin, dir)[1:]
-		for _, m := range checkingMasses {
-			if m.Stone == r.CurrStone.Reversed() {
+		for _, m := range r.board.LinearExtract(origin, dir)[1:] {
+			switch m.Stone {
+			case stone.Reversed():
 				candedates = append(
 					candedates,
 					[2]int{m.Row, m.Col},
 				)
-			} else if m.Stone == stopStone {
-				found = append(found, candedates...)
-				break
-			} else {
-				break
+			case stone:
+				willReverseLocs = append(willReverseLocs, candedates...)
+				break CHECK_REVERSE
+			default:
+				break CHECK_REVERSE
 			}
 		}
 	}
-	return found
+	return willReverseLocs
 }
 
-func (r *Reversi) currentMustSkip() bool {
-	for _, mass := range r.board.GetAll() {
-		row, col := mass.Row, mass.Col
-		if mass.Stone != b.None {
-			continue
+func (r *Reversi) mustSkipCount(stone b.Stone) int {
+	mustSkip := func(stone b.Stone) bool {
+		for _, mass := range r.board.GetAll() {
+			row, col := mass.Row, mass.Col
+			if mass.Stone != b.None {
+				continue
+			}
+			locToBeAbleToReverse := r.testPut(row, col, stone)
+			if locToBeAbleToReverse == nil || len(locToBeAbleToReverse) == 0 {
+				continue
+			}
+			return false
 		}
-		reverseStones := r.testPut(row, col, b.None)
-		if reverseStones == nil || len(reverseStones) == 0 {
-			continue
-		}
-		return false
+		return true
 	}
-	return true
+
+	switch {
+	case mustSkip(stone) && mustSkip(stone.Reversed()):
+		return 2
+	case mustSkip(stone):
+		return 1
+	default:
+		return 0
+	}
 }
 
 func (r *Reversi) Put(row, col int) bool {
 	r.Skipped = false
 
-	reverseStonesIdx := r.testPut(row, col, r.CurrStone)
-	if reverseStonesIdx == nil ||
-		len(reverseStonesIdx) == 0 {
+	willReverseLocs := r.testPut(row, col, r.CurrStone)
+	if willReverseLocs == nil || len(willReverseLocs) == 0 {
 		return false
 	}
 
 	r.board.Put(row, col, r.CurrStone)
-	for _, i := range reverseStonesIdx {
-		r.board.Reverse(i[0], i[1])
+	for _, loc := range willReverseLocs {
+		r.board.Reverse(loc[0], loc[1])
 	}
 
-	r.CurrStone = r.CurrStone.Reversed()
-
-	if r.currentMustSkip() {
-		r.Skipped = true
+	switch r.mustSkipCount(r.CurrStone.Reversed()) {
+	case 0:
 		r.CurrStone = r.CurrStone.Reversed()
-		if r.currentMustSkip() {
-			r.skippedInARow = true
-		}
-		return true
+	case 1:
+		r.Skipped = true
+	case 2:
+		r.Skipped = true
+		r.skippedInARow = true
 	}
 	return true
 }
