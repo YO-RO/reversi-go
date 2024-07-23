@@ -5,10 +5,10 @@ import (
 )
 
 type Reversi struct {
-	CurrStone   b.Stone
-	AutoSkipped bool
-	end         bool
-	board       b.Board
+	CurrStone b.Stone
+	Skipped   bool
+	end       bool
+	board     b.Board
 }
 
 func NewReversi() Reversi {
@@ -63,8 +63,8 @@ func (r *Reversi) testPut(row, col int, stone b.Stone) [][2]int {
 	return willReverseLocs
 }
 
-func (r *Reversi) mustSkipCount(stone b.Stone) int {
-	mustSkip := func(stone b.Stone) bool {
+func (r *Reversi) skipCount(stone b.Stone) int {
+	needToSkip := func(stone b.Stone) bool {
 		for _, square := range r.board.GetAll() {
 			row, col := square.Row, square.Col
 			if square.Stone != b.None {
@@ -80,9 +80,9 @@ func (r *Reversi) mustSkipCount(stone b.Stone) int {
 	}
 
 	switch {
-	case mustSkip(stone) && mustSkip(stone.Reversed()):
+	case needToSkip(stone) && needToSkip(stone.Reversed()):
 		return 2
-	case mustSkip(stone):
+	case needToSkip(stone):
 		return 1
 	default:
 		return 0
@@ -90,7 +90,7 @@ func (r *Reversi) mustSkipCount(stone b.Stone) int {
 }
 
 func (r *Reversi) Put(row, col int) bool {
-	r.AutoSkipped = false
+	r.Skipped = false
 
 	willReverseLocs := r.testPut(row, col, r.CurrStone)
 	if willReverseLocs == nil || len(willReverseLocs) == 0 {
@@ -102,19 +102,15 @@ func (r *Reversi) Put(row, col int) bool {
 		r.board.Reverse(loc[0], loc[1])
 	}
 
-	switch r.mustSkipCount(r.CurrStone.Reversed()) {
+	switch r.skipCount(r.CurrStone.Reversed()) {
 	case 0:
 		r.CurrStone = r.CurrStone.Reversed()
 	case 1:
-		r.AutoSkipped = true
+		r.Skipped = true
 	case 2:
 		r.end = true
 	}
 	return true
-}
-
-func (r *Reversi) Skip() {
-	r.CurrStone = r.CurrStone.Reversed()
 }
 
 func (r *Reversi) Result() (b.Stone, bool) {
