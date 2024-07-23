@@ -58,7 +58,7 @@ type Mass struct {
 }
 
 type Board struct {
-	surface [8][8]Stone
+	grid    [8][8]Stone
 	builder strings.Builder
 }
 
@@ -70,12 +70,12 @@ func (b *Board) Get(row, col int) (Stone, bool) {
 	if !validIndex(row, col) {
 		return None, false
 	}
-	return b.surface[row][col], true
+	return b.grid[row][col], true
 }
 
 func (b *Board) GetAll() [64]Mass {
 	var res [64]Mass
-	for row, line := range b.surface {
+	for row, line := range b.grid {
 		for col, stone := range line {
 			i := 8*row + col
 			res[i] = Mass{
@@ -102,18 +102,18 @@ func (b *Board) LinearExtract(origin, dir [2]int) []Mass {
 }
 
 func (b *Board) Reverse(row, col int) bool {
-	if !validIndex(row, col) || b.surface[row][col] == None {
+	if !validIndex(row, col) || b.grid[row][col] == None {
 		return false
 	}
-	b.surface[row][col] = b.surface[row][col].Reversed()
+	b.grid[row][col] = b.grid[row][col].Reversed()
 	return true
 }
 
 func (b *Board) Put(row, col int, stone Stone) bool {
-	if !validIndex(row, col) || b.surface[row][col] != None {
+	if !validIndex(row, col) || b.grid[row][col] != None {
 		return false
 	}
-	b.surface[row][col] = stone
+	b.grid[row][col] = stone
 	return true
 }
 
@@ -125,16 +125,16 @@ func (b *Board) PutByLoc(sign string, stone Stone) bool {
 }
 
 func (b *Board) CountStone() (none, black, white int) {
-	for _, line := range b.surface {
-		for _, mass := range line {
-			switch mass {
-			case Black:
-				black++
-			case White:
-				white++
-			default:
-				none++
-			}
+	for _, mass := range b.GetAll() {
+		switch mass.Stone {
+		case None:
+			none++
+		case Black:
+			black++
+		case White:
+			white++
+		default:
+			panic("unexpected Stone: Stone must be 0 (None) or 1 (Black) or 2 (White)")
 		}
 	}
 	return none, black, white
@@ -143,7 +143,7 @@ func (b *Board) CountStone() (none, black, white int) {
 func (b *Board) String() string {
 	b.builder.Reset()
 	b.builder.WriteString("\n  a b c d e f g h\n")
-	for i, line := range b.surface {
+	for i, line := range b.grid {
 		b.builder.WriteString(strconv.Itoa(i + 1))
 		for _, stone := range line {
 			switch stone {
