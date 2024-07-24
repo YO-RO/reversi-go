@@ -47,9 +47,9 @@ func (r *Reversi) State() State {
 	}
 }
 
-func (r *Reversi) testPut(row, col int, stone b.Stone) [][2]int {
+func (r *Reversi) testPut(row, col int, stone b.Stone) ([][2]int, bool) {
 	if s, ok := r.board.Get(row, col); !ok || s != b.None {
-		return [][2]int{}
+		return nil, false
 	}
 
 	dirs := [...][2]int{
@@ -84,7 +84,12 @@ func (r *Reversi) testPut(row, col int, stone b.Stone) [][2]int {
 			}
 		}
 	}
-	return stonesToReverse
+
+	if len(stonesToReverse) > 0 {
+		return stonesToReverse, true
+	} else {
+		return nil, false
+	}
 }
 
 func (r *Reversi) skipCount(stone b.Stone) int {
@@ -108,8 +113,8 @@ func (r *Reversi) putCandidates(stone b.Stone) [][2]int {
 		if square.Stone != b.None {
 			continue
 		}
-		stonesToReverse := r.testPut(square.Row, square.Col, stone)
-		if stonesToReverse != nil && len(stonesToReverse) > 0 {
+		_, canPut := r.testPut(square.Row, square.Col, stone)
+		if canPut {
 			candidates = append(candidates, [2]int{square.Row, square.Col})
 		}
 	}
@@ -119,8 +124,8 @@ func (r *Reversi) putCandidates(stone b.Stone) [][2]int {
 func (r *Reversi) Put(row, col int) bool {
 	r.skipped = false
 
-	stoneIdxsToReverse := r.testPut(row, col, r.currStone)
-	if stoneIdxsToReverse == nil || len(stoneIdxsToReverse) == 0 {
+	stoneIdxsToReverse, canPut := r.testPut(row, col, r.currStone)
+	if !canPut {
 		return false
 	}
 
