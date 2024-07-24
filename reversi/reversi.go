@@ -13,10 +13,10 @@ type Reversi struct {
 
 func NewReversi() Reversi {
 	board := b.Board{}
-	board.PutByLoc("4d", b.White)
-	board.PutByLoc("4e", b.Black)
-	board.PutByLoc("5d", b.Black)
-	board.PutByLoc("5e", b.White)
+	board.PutBySign("4d", b.White)
+	board.PutBySign("4e", b.Black)
+	board.PutBySign("5d", b.Black)
+	board.PutBySign("5e", b.White)
 	return Reversi{
 		currStone: b.Black,
 		board:     board,
@@ -63,7 +63,7 @@ func (r *Reversi) testPut(row, col int, stone b.Stone) [][2]int {
 		{1, -1},
 	}
 	// slice of [2]int{row, col}
-	willReverseLocs := make([][2]int, 0)
+	stonesToReverse := make([][2]int, 0)
 	for _, dir := range dirs {
 		candedates := make([][2]int, 0, 6)
 		origin := [2]int{row, col}
@@ -77,14 +77,14 @@ func (r *Reversi) testPut(row, col int, stone b.Stone) [][2]int {
 					[2]int{m.Row, m.Col},
 				)
 			case stone:
-				willReverseLocs = append(willReverseLocs, candedates...)
+				stonesToReverse = append(stonesToReverse, candedates...)
 				break CHECK_REVERSE
 			default:
 				break CHECK_REVERSE
 			}
 		}
 	}
-	return willReverseLocs
+	return stonesToReverse
 }
 
 func (r *Reversi) skipCount(stone b.Stone) int {
@@ -119,14 +119,14 @@ func (r *Reversi) putCandidates(stone b.Stone) [][2]int {
 func (r *Reversi) Put(row, col int) bool {
 	r.skipped = false
 
-	willReverseLocs := r.testPut(row, col, r.currStone)
-	if willReverseLocs == nil || len(willReverseLocs) == 0 {
+	stoneIdxsToReverse := r.testPut(row, col, r.currStone)
+	if stoneIdxsToReverse == nil || len(stoneIdxsToReverse) == 0 {
 		return false
 	}
 
 	r.board.Put(row, col, r.currStone)
-	for _, loc := range willReverseLocs {
-		r.board.Reverse(loc[0], loc[1])
+	for _, stoneIdx := range stoneIdxsToReverse {
+		r.board.Reverse(stoneIdx[0], stoneIdx[1])
 	}
 
 	switch r.skipCount(r.currStone.Reversed()) {

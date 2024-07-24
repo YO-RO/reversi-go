@@ -109,7 +109,7 @@ func (b *Board) Put(row, col int, stone Stone) bool {
 	return true
 }
 
-func (b *Board) PutByLoc(sign string, stone Stone) bool {
+func (b *Board) PutBySign(sign string, stone Stone) bool {
 	if row, col, ok := SignToIndex(sign); ok {
 		return b.Put(row, col, stone)
 	}
