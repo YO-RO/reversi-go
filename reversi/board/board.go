@@ -54,6 +54,10 @@ func validIndex(row, col int) bool {
 	return row >= 0 && row <= 7 && col >= 0 && col <= 7
 }
 
+func (b *Board) Grid() [8][8]Stone {
+	return b.grid
+}
+
 func (b *Board) Get(row, col int) (Stone, bool) {
 	if !validIndex(row, col) {
 		return None, false

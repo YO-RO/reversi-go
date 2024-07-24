@@ -5,9 +5,9 @@ import (
 )
 
 type Reversi struct {
-	CurrStone b.Stone
-	Skipped   bool
-	end       bool
+	currStone b.Stone
+	skipped   bool
+	ended     bool
 	board     b.Board
 }
 
@@ -18,8 +18,32 @@ func NewReversi() Reversi {
 	board.PutByLoc("5d", b.Black)
 	board.PutByLoc("5e", b.White)
 	return Reversi{
-		CurrStone: b.Black,
+		currStone: b.Black,
 		board:     board,
+	}
+}
+
+type State struct {
+	CurrStone   b.Stone
+	SkippedPrev bool
+
+	Board      [8][8]b.Stone
+	Candidates [][2]int
+
+	BlackCnt, WhiteCnt int
+}
+
+func (r *Reversi) State() State {
+	_, b, w := r.board.CountStone()
+	return State{
+		CurrStone:   r.currStone,
+		SkippedPrev: r.skipped,
+
+		Board:      r.board.Grid(),
+		Candidates: r.putCandidates(r.currStone),
+
+		BlackCnt: b,
+		WhiteCnt: w,
 	}
 }
 
@@ -78,10 +102,6 @@ func (r *Reversi) skipCount(stone b.Stone) int {
 	}
 }
 
-func (r *Reversi) PutCandidates() [][2]int {
-	return r.putCandidates(r.CurrStone)
-}
-
 func (r *Reversi) putCandidates(stone b.Stone) [][2]int {
 	candidates := [][2]int{}
 	for _, square := range r.board.GetAll() {
@@ -97,31 +117,31 @@ func (r *Reversi) putCandidates(stone b.Stone) [][2]int {
 }
 
 func (r *Reversi) Put(row, col int) bool {
-	r.Skipped = false
+	r.skipped = false
 
-	willReverseLocs := r.testPut(row, col, r.CurrStone)
+	willReverseLocs := r.testPut(row, col, r.currStone)
 	if willReverseLocs == nil || len(willReverseLocs) == 0 {
 		return false
 	}
 
-	r.board.Put(row, col, r.CurrStone)
+	r.board.Put(row, col, r.currStone)
 	for _, loc := range willReverseLocs {
 		r.board.Reverse(loc[0], loc[1])
 	}
 
-	switch r.skipCount(r.CurrStone.Reversed()) {
+	switch r.skipCount(r.currStone.Reversed()) {
 	case 0:
-		r.CurrStone = r.CurrStone.Reversed()
+		r.currStone = r.currStone.Reversed()
 	case 1:
-		r.Skipped = true
+		r.skipped = true
 	case 2:
-		r.end = true
+		r.ended = true
 	}
 	return true
 }
 
 func (r *Reversi) Result() (b.Stone, bool) {
-	if !r.end {
+	if !r.ended {
 		return b.None, false
 	}
 
@@ -135,10 +155,5 @@ func (r *Reversi) Result() (b.Stone, bool) {
 	default:
 		winner = b.None
 	}
-	return winner, r.end
-}
-
-func (r *Reversi) String() string {
-	board := r.board.String()
-	return board
+	return winner, r.ended
 }
