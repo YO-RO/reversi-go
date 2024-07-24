@@ -145,20 +145,22 @@ func (r *Reversi) Put(row, col int) bool {
 	return true
 }
 
-func (r *Reversi) Result() (b.Stone, bool) {
+func (r *Reversi) Result() (winner b.Stone, black, white int, ended bool) {
 	if !r.ended {
-		return b.None, false
+		return winner, black, white, false
 	}
 
-	var winner b.Stone
-	_, blackCnt, whiteCnt := r.board.CountStone()
+	var none int
+	none, black, white = r.board.CountStone()
 	switch {
-	case blackCnt > whiteCnt:
+	case black > white:
 		winner = b.Black
-	case blackCnt < whiteCnt:
+		black += none // 空きマスは勝者の獲得石に加算される
+	case white > black:
 		winner = b.White
+		white += none
 	default:
 		winner = b.None
 	}
-	return winner, r.ended
+	return winner, black, white, true
 }
