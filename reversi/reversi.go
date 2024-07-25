@@ -171,3 +171,16 @@ func (r *Reversi) Result() (winner b.Stone, black, white int, ended bool) {
 	}
 	return winner, black, white, true
 }
+
+func Restore(rec Record) Reversi {
+	reversi := NewReversi()
+	for _, e := range rec {
+		if row, col, ok := b.SignToIndex(e.Black); ok {
+			reversi.Put(row, col)
+		}
+		if row, col, ok := b.SignToIndex(e.White); ok {
+			reversi.Put(row, col)
+		}
+	}
+	return reversi
+}
