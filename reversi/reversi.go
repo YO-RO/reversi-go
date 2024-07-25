@@ -9,6 +9,7 @@ type Reversi struct {
 	skipped   bool
 	ended     bool
 	board     b.Board
+	rec       recorder
 }
 
 func NewReversi() Reversi {
@@ -45,6 +46,10 @@ func (r *Reversi) State() State {
 		BlackCnt: b,
 		WhiteCnt: w,
 	}
+}
+
+func (r *Reversi) ExportRecord() Record {
+	return r.rec.export()
 }
 
 func (r *Reversi) testPut(row, col int, stone b.Stone) ([][2]int, bool) {
@@ -130,6 +135,8 @@ func (r *Reversi) Put(row, col int) bool {
 	}
 
 	r.board.Put(row, col, r.currStone)
+	sign, _ := b.IndexToSign(row, col)
+	r.rec.record(sign, r.currStone)
 	for _, stoneIdx := range stoneIdxsToReverse {
 		r.board.Reverse(stoneIdx[0], stoneIdx[1])
 	}

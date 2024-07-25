@@ -1,6 +1,7 @@
 package board
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,6 +26,19 @@ func (s Stone) Reversed() Stone {
 	}
 }
 
+func (s Stone) String() string {
+	switch s {
+	case None:
+		return "None"
+	case Black:
+		return "Black"
+	case White:
+		return "White"
+	default:
+		return "Unexpected"
+	}
+}
+
 // 2a -> 1, 0
 // 6e -> 5, 4
 func SignToIndex(sign string) (int, int, bool) {
@@ -37,6 +51,13 @@ func SignToIndex(sign string) (int, int, bool) {
 	row -= 1 // インデックスは0はじまり
 	col := int(match[2][0] - byte('a'))
 	return row, col, true
+}
+
+func IndexToSign(row, col int) (string, bool) {
+	if !validIndex(row, col) {
+		return "", false
+	}
+	return fmt.Sprintf("%d%c", row+1, 'a'+col), true
 }
 
 // マスのこと
